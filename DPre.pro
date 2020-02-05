@@ -16,11 +16,15 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    imagelibchooser.cpp \
     main.cpp \
-    dpremainwindow.cpp
+    dpremainwindow.cpp \
+    settings.cpp
 
 HEADERS += \
-    dpremainwindow.h
+    dpremainwindow.h \
+    imagelibchooser.h \
+    settings.h
 
 FORMS += \
     dpremainwindow.ui
