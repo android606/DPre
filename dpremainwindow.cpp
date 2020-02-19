@@ -37,6 +37,12 @@ DPreMainWindow::~DPreMainWindow()
 
 void DPreMainWindow::on_pushButton_NextDone_clicked()
 {
+    // If the button text is "Close", just close and exit
+    if(ui->pushButton_NextDone->text() == "Close")
+    {
+        QApplication::quit();
+    }
+
     // Go to the next tab (unless we're already at the last tab)
     if(ui->tabWidgetMain->currentIndex() < ui->tabWidgetMain->count() - 1)
     {
@@ -47,17 +53,28 @@ void DPreMainWindow::on_pushButton_NextDone_clicked()
     else
     {
         _imagelibchooser->TakeAllActions();
+        updateNextButton();
     }
 
 }
 
-void DPreMainWindow::on_tabWidgetMain_currentChanged(int index)
+void DPreMainWindow::updateNextButton()
 {
-    // If we're at the last tab, change the button text to "Done"
-    // Otherwise, change it to "Next"
-    if(index == ui->tabWidgetMain->count() - 1)
+    int selectedTab = ui->tabWidgetMain->currentIndex();
+    /*-If we're at the last tab, and there are things to do,
+     * change the button text to "Make Final Changes"
+     *-If we're at the last tab, and there are NOT things to do,
+     * change the button text to "Close"
+     *
+     *-Otherwise, change the button text to "Next"
+     */
+    if((selectedTab == ui->tabWidgetMain->count() - 1) & !(_imagelibchooser->HasActionsToTake()))
     {
-        ui->pushButton_NextDone->setText("Finish");
+        ui->pushButton_NextDone->setText("Close");
+    }
+    else if((selectedTab == ui->tabWidgetMain->count() - 1) & (_imagelibchooser->HasActionsToTake()))
+    {
+        ui->pushButton_NextDone->setText("Make Final Changes");
     }
     else
     {
@@ -66,44 +83,34 @@ void DPreMainWindow::on_tabWidgetMain_currentChanged(int index)
 
 }
 
+void DPreMainWindow::on_tabWidgetMain_currentChanged(int index)
+{
+    (void)index;
+
+    updateNextButton();
+}
+
+
 
 /*
  * IMAGE LIBRARY SELECTOR
  */
 void DPreMainWindow::PopulateImageLibList()
 {
+    //Populate list of image libraries so the user has something to choose from
     ui->listOfImageLibs->clear();
-    ui->listOfImageLibs->addItem("--Use Default Images--");
-
-    QDir ImgLibRootDir;
-    ImgLibRootDir.setPath(ui->lineEdit_ImgLibRoot->text());
-    ImgLibRootDir.setFilter(QDir::Dirs | QDir::NoDotAndDotDot);
-
-    QFileInfoList fileinfolist = ImgLibRootDir.entryInfoList();
-    for(int i = 0; i < fileinfolist.size(); i++)
-    {
-        QFileInfo fileinfo = fileinfolist.at(i);
-        ui->listOfImageLibs->addItem(fileinfo.baseName());
-    }
+    ui->listOfImageLibs->addItems(_imagelibchooser->getImageLibList());
 
     //Select first item in the list
     ui->listOfImageLibs->setCurrentRow(0);
 }
 
-
 void DPreMainWindow::on_listOfImageLibs_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous)
 {
-    //If an item index greater than 0 is selected, set the current 'selected image
-    //library' to the item selected.
-    //If the first item in the list (index 0) is selected, or if no item in the
-    //list is selected at all (index -1), unset the current 'selected image library'.
-    if(ui->listOfImageLibs->currentRow() > 0)
-    {
-        _imagelibchooser->setImageLibSelected(current->text());
-    }
-    else
-    {
-        _imagelibchooser->setImageLibSelected("");
-    }
+    //unused parameters
+    (void)current;
+    (void)previous;
 
+    //Tell ImageLibChooser which lib the user selected in the list
+    _imagelibchooser->setImageLibSelected(ui->listOfImageLibs->currentRow());
 }

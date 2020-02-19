@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
 
 
-    Settings *settings = Settings::getInstance(QCoreApplication::arguments());
+    Settings::getInstance(QCoreApplication::arguments());
 
     DPreMainWindow w;
     w.show();

@@ -30,8 +30,6 @@ private:
     ImageLibChooser *_imagelibchooser;
 
     void PopulateImageLibList();
-
-    bool _copyImageLibFiles;
-    QString _imageLibName;
+    void updateNextButton();
 };
 #endif // DPREMAINWINDOW_H

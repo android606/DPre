@@ -14,17 +14,51 @@ void ImageLibChooser::setLogWidget(QTextEdit *logwidget)
 void ImageLibChooser::setImageLibRootPath(QDir path)
 {
     _ImageLibRootPath = path;
+    // Cool, so now that we know where the image libraries are, we can populate
+    // the _ImageLibraryList.
+
+    _ImageLibraryList.clear();
+    _ImageLibraryList.append("--Use Default Images--");
+
+    _ImageLibRootPath.setFilter(QDir::Dirs | QDir::NoDotAndDotDot);
+
+    QFileInfoList fileinfolist = _ImageLibRootPath.entryInfoList();
+    for(int i = 0; i < fileinfolist.size(); i++)
+    {
+        QFileInfo fileinfo = fileinfolist.at(i);
+        _ImageLibraryList.append(fileinfo.baseName());
+    }
+
+    //Make sure we're selecting image library "0" (none selected)
+    setImageLibSelected(0);
+
 }
 
-void ImageLibChooser::setImageLibSelected(QString libname)
+
+QList<QString> ImageLibChooser::getImageLibList()
 {
-    _ImageLibSelected = libname;
-    _hasImagesToCopy = true;
+    return _ImageLibraryList;
 }
 
+//Sets the index of the specific image library selected by the user
+void ImageLibChooser::setImageLibSelected(int itemnum)
+{
+    _ImageLibSelected = itemnum;
+
+    if(itemnum > 0) _hasImagesToCopy = true;
+    else _hasImagesToCopy = false;
+}
+
+//Sets the destination folder where images will be copied
 void ImageLibChooser::setImageDestPath(QDir path)
 {
     _ImageDestPath = path;
+}
+
+//Returns true if ImageLibChooser still has things to do
+bool ImageLibChooser::HasActionsToTake()
+{
+    return _hasImagesToCopy;
 }
 
 //Copies image files from library to extract folder, if needed.
@@ -34,19 +68,25 @@ int ImageLibChooser::TakeAllActions()
 
     //If the first item in the list of image libs is selected, don't
     //do anything except say in the log that we're not doing anything.
-    if(_ImageLibSelected == "")
+    if(_hasImagesToCopy)
     {
-        //Don't copy images, output a message to the log
-        _LogWidget->append("<hr/><b>Image Library Chooser</b> has no actions to take.");
-        return 0;
+        //Copy images, output messages to the log
+        _LogWidget->append("<hr/><b>Image Library Chooser</b> processing images...");
+        int retval = CopyImages();
+        if(retval == 0)
+        {
+            _LogWidget->append("<b>Image Library Chooser</b> has completed successfully.<hr/>");
+        }
+        else
+        {
+            _LogWidget->append(QStringLiteral("<b>Image Library Chooser</b> has failed with code %1.<hr/>").arg(retval));
+        }
+        _hasImagesToCopy = false;
     }
     else
     {
-        //Copy images, output messages to the log
-        _LogWidget->append("<hr/><b>Image Library Chooser</b> has images to process...");
-        CopyImages();
-
-        return 0;
+        //Don't copy images, output a message to the log
+        _LogWidget->append("<hr/><b>Image Library Chooser</b> has no actions to take.");
     }
 
     return 0;
@@ -54,10 +94,10 @@ int ImageLibChooser::TakeAllActions()
 
 int ImageLibChooser::CopyImages()
 {
-    QDir SourceFolder(_ImageLibRootPath.filePath(_ImageLibSelected)); //Concatenate selected image lib folder name to complete path
+    int retval = 0;
+    QDir SourceFolder(_ImageLibRootPath.filePath(_ImageLibraryList.at(_ImageLibSelected))); //Concatenate selected image lib folder name to complete path
 
     QDir DestFolder(_ImageDestPath);
-    qDebug() << SourceFolder.canonicalPath();
 
     SourceFolder.setFilter(QDir::Files | QDir::NoDotAndDotDot | QDir::NoSymLinks);
     QStringList imagesFilters;
@@ -114,15 +154,17 @@ int ImageLibChooser::CopyImages()
                 _LogWidget->append(" FAILED: Destination file already exists but could not be deleted ("
                                        + destfile.errorString()
                                        +")");
+                retval=2;
             }
 
             bool result = sourcefile.copy(destfile.fileName());
             if(result == false)
             {
                 _LogWidget->append("     FAILED: " + sourcefile.errorString());
+                retval=3;
             }
         }
     }
 
-    return 0;
+    return retval;
 }
